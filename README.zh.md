@@ -45,13 +45,59 @@ npm install -g @zweicli/cli
 zwei --help
 ```
 
-Zwei 独立版本管理,所以自动升级被关掉了 —— 上游 opencode 的 release 通道装过来是错的包。要升级:
-
-```bash
-npm install -g @zweicli/cli@latest
-```
+默认开启自动升级,跟 npm 上的 `@zweicli/cli@latest`。手动升:`zwei upgrade`,或 `npm install -g @zweicli/cli@latest`。
 
 dual 循环之外的所有内容(鉴权、模型、provider、会话、web UI 等)仍沿用上游 opencode 的约定。参见 [opencode.ai](https://opencode.ai)。
+
+## 使用
+
+进 TUI:
+
+```bash
+zwei
+```
+
+### Slash 命令
+
+在 TUI 里输入 `/` 就能看命令列表。dual 流程相关的:
+
+| 命令 | 作用 |
+|---|---|
+| `/agents`(或 `/agent`)| 选择模式 × 角色。见下方模式表 |
+| `/model` | 同时改 **PhD 和 Supervisor** 的模型 |
+| `/model1` | 只改 **PhD**(写代码者)的模型 |
+| `/model2` | 只改 **Supervisor**(审查者)的模型 |
+| `/clear` | 清空全部三个会话(你 + PhD + Supervisor) |
+| `/clear1` | 只清 PhD 的会话 |
+| `/clear2` | 只清 Supervisor 的会话 |
+
+### `/agents` —— 选模式
+
+agents 对话框里有六个选项,是三种**模式** × 两种**角色**的组合:
+
+| 模式 | 含义 | 用在什么场景 |
+|---|---|---|
+| **`dual`** | 每轮都是 PhD 写 → Supervisor 审查。Supervisor **永远都跑** | 长任务、严格审查、防 Goodhart 的评估 |
+| **`auto`** | PhD 先写。如果测试 gate 通过就跳过 Supervisor,否则再叫 | 默认值 —— 写代码者第一轮就写对时省 token |
+| **`single`** | 只跑 PhD,不要 Supervisor。等同于上游 opencode 的单 agent 模式 | 强模型能一次搞定的任务,不用多花审查的钱 |
+
+**角色**后缀(`build` vs `plan`)是 opencode 标准的 agent 变体:
+
+- **`build`** —— 执行模式,agent 真正改代码、跑命令
+- **`plan`** —— 规划模式,只读,先产出 plan 文档再切到 build
+
+所以 `dual.build` 是"PhD + Supervisor,两边都在 build 模式",`auto.plan` 是"PhD 先规划,Supervisor 按需审查 plan",以此类推。
+
+### 让 PhD 和 Supervisor 用不同的模型
+
+非对称拆分的核心价值就是写代码的可以用便宜模型,审查的用强模型(或者反过来):
+
+```
+/model1   # PhD 用便宜快的模型(比如 Haiku 4.5)
+/model2   # Supervisor 用强的挑剔的模型(比如 Opus 4.6)
+```
+
+跑到一半也能切 —— 改动在下一轮生效,不打断当前这一轮。
 
 ## 状态
 

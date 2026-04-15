@@ -45,13 +45,59 @@ npm install -g @zweicli/cli
 zwei --help
 ```
 
-Zwei is versioned independently from opencode, so auto-upgrade is disabled — upstream release channels would pull the wrong package. To bump:
-
-```bash
-npm install -g @zweicli/cli@latest
-```
+Auto-update is on by default and tracks `@zweicli/cli@latest` on npm. To manually bump: `zwei upgrade`, or `npm install -g @zweicli/cli@latest`.
 
 For everything outside the dual loop (auth, models, providers, sessions, web UI), upstream opencode conventions still apply. See [opencode.ai](https://opencode.ai).
+
+## Usage
+
+Start the TUI:
+
+```bash
+zwei
+```
+
+### Slash commands
+
+Once inside the TUI, type `/` at the prompt. The commands that matter for the dual-agent workflow:
+
+| Command | Does what |
+|---|---|
+| `/agents` (or `/agent`) | Pick mode × role. See the mode table below |
+| `/model` | Change model for **both** PhD and Supervisor |
+| `/model1` | Change model for **PhD only** (the writer) |
+| `/model2` | Change model for **Supervisor only** (the grader) |
+| `/clear` | Wipe conversation in all three sessions (you + PhD + Supervisor) |
+| `/clear1` | Wipe PhD's session only |
+| `/clear2` | Wipe Supervisor's session only |
+
+### `/agents` — pick a mode
+
+The agents dialog shows six options — the product of three **modes** and two **roles**:
+
+| Mode | What it does | When to use |
+|---|---|---|
+| **`dual`** | Every round, PhD writes then Supervisor reviews. Supervisor always runs | Long tasks, strict review, anti-Goodhart eval settings |
+| **`auto`** | PhD writes first. If a test gate passes, Supervisor is skipped; otherwise invoked | Default — saves tokens when writer nails it on the first round |
+| **`single`** | PhD only, no Supervisor. Equivalent to upstream opencode's single-agent flow | Tasks a strong model can one-shot — no point paying for review |
+
+The **role** suffix (`build` vs `plan`) is the standard opencode agent variant:
+
+- **`build`** — execution mode; the agent actually edits and runs
+- **`plan`** — planning mode; read-only, produces a plan document before switching to build
+
+So `dual.build` means "PhD + Supervisor, both in build mode", `auto.plan` means "PhD plans first, Supervisor checks the plan on demand", etc.
+
+### Different models for PhD and Supervisor
+
+The whole point of the asymmetric split is that the writer can be cheap and the grader strong (or vice versa):
+
+```
+/model1   # pick a fast / cheap model for PhD (e.g. Haiku 4.5)
+/model2   # pick a strong / picky model for Supervisor (e.g. Opus 4.6)
+```
+
+Switching models works mid-run too — the change lands on the next round, not the current one.
 
 ## Status
 
