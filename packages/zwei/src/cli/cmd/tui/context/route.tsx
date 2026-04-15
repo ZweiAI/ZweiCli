@@ -30,9 +30,14 @@ export type Route = HomeRoute | SessionRoute | PluginRoute | DualRoute
 export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
   name: "Route",
   init: () => {
+    // Default landing is the dual route — that's the Zwei experience
+    // (mode=auto → "auto fast" by default). The upstream `home` route dumps
+    // the user into a plain single-session flow that labels itself "single
+    // fast" regardless of saved mode, which is the wrong default for a fork
+    // whose whole point is the dual split.
     const initial: Route = process.env["ZWEI_ROUTE"]
       ? JSON.parse(process.env["ZWEI_ROUTE"])
-      : { type: "home" }
+      : { type: "dual" }
     const [store, setStore] = createStore<Route>(initial)
 
     return {
