@@ -81,12 +81,12 @@ The agents dialog shows six options — the product of three **modes** and two *
 | **`auto`** | PhD writes first. If a test gate passes, Supervisor is skipped; otherwise invoked | Default — saves tokens when writer nails it on the first round |
 | **`single`** | PhD only, no Supervisor. Equivalent to upstream opencode's single-agent flow | Tasks a strong model can one-shot — no point paying for review |
 
-The **role** suffix (`build` vs `plan`) is the standard opencode agent variant:
+The **role** suffix (`fast` vs `plan`) picks the agent variant:
 
-- **`build`** — execution mode; the agent actually edits and runs
-- **`plan`** — planning mode; read-only, produces a plan document before switching to build
+- **`fast`** — execution mode; the agent actually edits and runs
+- **`plan`** — planning mode; read-only, produces a plan document before switching to fast
 
-So `dual.build` means "PhD + Supervisor, both in build mode", `auto.plan` means "PhD plans first, Supervisor checks the plan on demand", etc.
+So `dual fast` means "PhD + Supervisor, both in execution mode", `auto plan` means "PhD plans first, Supervisor checks the plan on demand", etc.
 
 ### Different models for PhD and Supervisor
 

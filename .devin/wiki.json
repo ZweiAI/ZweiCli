@@ -1,57 +1,65 @@
 {
   "repo_notes": [
     {
-      "content": "Zwei is an agent runtime that escalates to a second agent (supervisor) only when needed. It focuses on long-horizon tasks, reducing regression, and maintaining intent over multiple steps."
+      "content": "Zwei CLI is a fork of opencode with a PhD / Supervisor dual-agent split. PhD writes code, Supervisor verifies it. The two run in physically isolated sessions with independent skill sets, one-way (asymmetric) memory, and write/test separation (PhD has no bash and no read access to tests). The orchestrator escalates to the Supervisor only when needed via three modes: single (PhD only), dual (PhD + Supervisor every round), auto (PhD first, Supervisor on demand — skipped when test gate passes). Package on npm: @zweicli/cli, command: `zwei`. Written in TypeScript on Bun, built as a single AOT-compiled binary via `bun build --compile`. Internal identifiers still say Student/Supervisor; README and user-facing UI say PhD/Supervisor."
     }
   ],
   "pages": [
     {
       "title": "Zwei Overview",
-      "purpose": "High-level introduction to Zwei: what it is, why it exists, and how it differs from single-agent systems. Explains auto/single/dual modes and the idea of conditional escalation."
+      "purpose": "What Zwei is, why it exists, and how it differs from single-agent CLIs. Explains the asymmetric writer/verifier split, the three modes (single / auto / dual), and the context-pollution and Goodhart problems the split is designed to avoid."
     },
     {
       "title": "Getting Started",
-      "purpose": "Install Zwei CLI, run your first command, and understand basic usage. Covers npm install, running zwei, and first interaction patterns."
+      "purpose": "Install via `npm install -g @zweicli/cli`, run `zwei`, walk through the first prompt. Covers provider setup, model selection, and what the default landing state looks like (dual route, `auto fast`)."
     },
     {
-      "title": "Core Concept: Auto / Single / Dual",
-      "purpose": "Explains the three execution modes: single (one agent), dual (student + supervisor), and auto (adaptive escalation). Describes when each mode is used and trade-offs."
+      "title": "Core Concept: Single / Auto / Dual",
+      "purpose": "The three execution modes selected via `/agents`. single = PhD only (no verification). dual = PhD + Supervisor every round. auto = PhD first, Supervisor invoked on demand (the auto-test-gate skips Supervisor when tests pass, cutting wall time ~60% on easy rounds). Trade-offs between cost, latency, and verification strength."
     },
     {
       "title": "Execution Flow",
-      "purpose": "Describes how a task flows through Zwei: user input → student attempt → optional supervisor review → next round or finish. Covers round lifecycle and termination conditions."
+      "purpose": "How a task flows through a dual round: user prompt → PhD session (write-only, no bash/tests) → optional test gate → Supervisor session (reads PhD's code + test output, emits structured JSON verdict) → orchestrator decides: pass → done; fail → feed `repair_hint` back to PhD; loop bounded by maxRounds. Covers queueing follow-up prompts (pending queue consumed on run termination)."
     },
     {
-      "title": "Student & Supervisor Roles",
-      "purpose": "Defines the responsibilities of the student (execution) and supervisor (verification, compression, intent tracking). Explains how they interact and why this separation exists."
+      "title": "PhD & Supervisor Roles",
+      "purpose": "Responsibilities and constraints of each role. PhD: editor/write tools only, no bash, no test-file reads — cannot self-verify. Supervisor: reviews only, sees PhD's code and test runner output, returns structured JSON (`pass` / `fail` + `main_issue` + `evidence` + `repair_hint`). Explains session-level permission isolation and why this isn't prompt-only."
     },
     {
-      "title": "Long-Range Attention & Memory",
-      "purpose": "Explains how Zwei maintains intent across multiple steps using supervisor summaries, ledger, and snapshots instead of relying on raw context."
+      "title": "Asymmetric Memory",
+      "purpose": "Memory flows one way, by design. PhD never sees Supervisor's reasoning — only the structured verdict crosses the boundary. Supervisor sees PhD's code and test output. Prevents PhD from Goodharting the verifier by chasing its phrasing. Describes how this is enforced at the session boundary."
     },
     {
-      "title": "Prompting & Renderer",
-      "purpose": "Describes how structured data (task, history, constraints) is rendered into prompts for student and supervisor. Explains why prompt rendering is separated."
+      "title": "Write / Test Separation",
+      "purpose": "Why PhD has no bash and no read access to test files. Self-verification is physically impossible, and the writer's context stays clean — no tool traces, no test output, no file dumps polluting it. Extends to how this interacts with compaction: stale tool outputs from earlier rounds get evicted between rounds."
     },
     {
-      "title": "Tools & Capabilities",
-      "purpose": "Lists built-in tools (bash, read, write, websearch, etc.) and how agents use them. Covers permission model and execution boundaries."
+      "title": "Compaction & Context Control",
+      "purpose": "The fork's `SessionCompaction.prune` extensions (`protectTokens` / `minTokens` / `protectTurns`), why upstream's unconditional 40 K protect window was the wrong default for mid-size sessions, and how the dual loop calls compaction between rounds with a 2 K protect window to evict stale tool-call outputs."
+    },
+    {
+      "title": "Independent Skills",
+      "purpose": "Each role loads its own skill set — nothing shared by default. PhD isn't distracted by review tooling, Supervisor isn't tempted to reach in and edit. Covers how skills are declared and how they're filtered per role."
+    },
+    {
+      "title": "Slash Commands",
+      "purpose": "TUI slash commands that matter for the dual workflow: `/agents` (pick mode × role), `/model` (both), `/model1` (PhD only), `/model2` (Supervisor only), `/clear`, `/clear1` (PhD), `/clear2` (Supervisor). Includes the `fast` vs `plan` variant distinction."
     },
     {
       "title": "Plan Mode",
-      "purpose": "Explains the planning workflow: plan → review → checkpoints → execution. Covers how planning differs from direct execution."
+      "purpose": "The `plan` agent variant: read-only planning phase before switching to `fast` (execution). Combined with `dual` / `auto` / `single`, gives six total options (e.g. `dual plan`, `auto fast`). Covers the plan → execute handoff."
     },
     {
-      "title": "CLI & Interaction",
-      "purpose": "Documents CLI usage: /agent, /model, switching modes, running tasks, and interactive behavior."
+      "title": "Queue & Follow-up Prompts",
+      "purpose": "How submitting a follow-up prompt while a dual run is live works: the text is stamped to the parent session (visible in the transcript, like opencode's QUEUED badge) and pushed into a local queue. When the current run transitions from live (starting/running) into a terminal status (pass/fail/error/aborted/budget_exceeded), the next pending prompt fires as a fresh round on the same child sessions."
     },
     {
       "title": "Configuration",
-      "purpose": "Covers configuration options such as model selection, default mode, and runtime behavior."
+      "purpose": "Config options: model per role, default mode, compaction thresholds, maxRounds. Covers auto-upgrade settings (disabled/notify/on, targets `@zweicli/cli` via npm/bun/pnpm)."
     },
     {
       "title": "Architecture",
-      "purpose": "Overview of the internal structure: session system, dual-agent loop, prompt renderer, and orchestration logic."
+      "purpose": "Internal structure: SessionDualAgent orchestrator, the three sessions per task (parent + student + supervisor), structured JSON contracts at the round boundary, telemetry events on the bus, auto-test-gate, interaction with opencode's Session service. Notes where the fork diverges from upstream opencode."
     }
   ]
 }

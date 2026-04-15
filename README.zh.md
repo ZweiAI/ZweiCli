@@ -81,12 +81,12 @@ agents 对话框里有六个选项,是三种**模式** × 两种**角色**的组
 | **`auto`** | PhD 先写。如果测试 gate 通过就跳过 Supervisor,否则再叫 | 默认值 —— 写代码者第一轮就写对时省 token |
 | **`single`** | 只跑 PhD,不要 Supervisor。等同于上游 opencode 的单 agent 模式 | 强模型能一次搞定的任务,不用多花审查的钱 |
 
-**角色**后缀(`build` vs `plan`)是 opencode 标准的 agent 变体:
+**角色**后缀(`fast` vs `plan`)决定 agent 变体:
 
-- **`build`** —— 执行模式,agent 真正改代码、跑命令
-- **`plan`** —— 规划模式,只读,先产出 plan 文档再切到 build
+- **`fast`** —— 执行模式,agent 真正改代码、跑命令
+- **`plan`** —— 规划模式,只读,先产出 plan 文档再切到 fast
 
-所以 `dual.build` 是"PhD + Supervisor,两边都在 build 模式",`auto.plan` 是"PhD 先规划,Supervisor 按需审查 plan",以此类推。
+所以 `dual fast` 是"PhD + Supervisor,两边都在执行模式",`auto plan` 是"PhD 先规划,Supervisor 按需审查 plan",以此类推。
 
 ### 让 PhD 和 Supervisor 用不同的模型
 
