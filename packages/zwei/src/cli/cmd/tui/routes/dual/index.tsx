@@ -1,5 +1,5 @@
 import { Prompt, type PromptRef } from "@tui/component/prompt"
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js"
+import { For, Show, createEffect, createMemo, createSignal, on } from "solid-js"
 import { parse as parsePartial } from "partial-json"
 import { useTerminalDimensions } from "@opentui/solid"
 import { Sidebar } from "../session/sidebar"
@@ -280,6 +280,24 @@ export function Dual() {
     const map = (kv.get(DUAL_MAP_KEY) as Record<string, DualSessions> | undefined) ?? {}
     kv.set(DUAL_MAP_KEY, { ...map, [s.parentSessionID]: s })
   })
+  // Fire the next queued prompt whenever the current run transitions from
+  // live (starting/running) into a terminal status (pass/fail/error/aborted/
+  // budget_exceeded). One prompt per transition — the firing dual.start pushes
+  // the run back into "starting", and this effect re-enters when it finishes.
+  createEffect(
+    on(
+      () => run()?.status,
+      (status, prev) => {
+        const wasLive = prev === "starting" || prev === "running"
+        const isLive = status === "starting" || status === "running"
+        if (!wasLive || isLive) return
+        const q = pending()
+        if (q.length === 0) return
+        setPending(q.slice(1))
+        runDual(q[0], route.sessionID, true).catch(() => {})
+      },
+    ),
+  )
   createEffect(() => {
     const sid = route.sessionID
     if (!sid) return
@@ -525,24 +543,45 @@ export function Dual() {
     setRun(undefined)
   }
 
-  // Diagnostic: shows a toast the moment onCustomSubmit fires so we can tell
-  // whether Enter is reaching this handler vs bailing somewhere upstream. The
-  // toast stays on screen a couple seconds — adjust/remove once the flow is
-  // confirmed working end-to-end.
+  // Follow-up prompts submitted while a dual run is live. We stamp the text
+  // onto the parent session immediately so the user sees it in the chat, then
+  // consume the queue one-by-one when the current run transitions out of
+  // starting/running — mirrors the native opencode QUEUED behaviour.
+  const [pending, setPending] = createSignal<PromptInfo[]>([])
+
+  const stampToParent = async (text: string) => {
+    const parentID = active()?.parentSessionID ?? route.sessionID
+    if (!parentID) return
+    await sdk.client.session
+      .prompt({
+        sessionID: parentID,
+        agent: local.agent.current().name,
+        noReply: true,
+        parts: [{ type: "text", text }],
+      })
+      .catch(() => {})
+  }
+
   const onCustomSubmit = async (prompt: PromptInfo) => {
     const text = prompt.input
     const origin = route.sessionID
-    // Only block if there's an active run (starting/running). Finished runs
-    // (pass/fail/error/aborted/budget_exceeded) are no longer live — the next
-    // Enter starts a fresh orchestrator iteration on the SAME child sessions.
     const r = run()
     if (r && (r.status === "starting" || r.status === "running")) {
+      // Queue for after the current run finishes. Stamp first so the user
+      // message appears in the transcript immediately.
+      await stampToParent(text)
+      setPending((q) => [...q, prompt])
       toast.show({
-        message: `dual run ${r.status} (round ${r.round}); wait for it or press esc twice to interrupt`,
+        message: `queued; will fire when round ${r.round} completes`,
         variant: "info",
       })
       return
     }
+    await runDual(prompt, origin)
+  }
+
+  const runDual = async (prompt: PromptInfo, origin: string | undefined, alreadyStamped = false) => {
+    const text = prompt.input
     if (mode() === "single") {
       let sid = route.sessionID
       if (!sid) {
@@ -620,16 +659,19 @@ export function Dual() {
         parentSessionID = created.data.id
       }
 
-      // Stamp the user message first so it precedes any assistant message the
-      // orchestrator triggers in this round.
-      await sdk.client.session
-        .prompt({
-          sessionID: parentSessionID,
-          agent: local.agent.current().name,
-          noReply: true,
-          parts: [{ type: "text", text }],
-        })
-        .catch(() => {})
+      // Stamp the user message first so it precedes any assistant message
+      // the orchestrator triggers in this round. Skipped when the queue
+      // consumer is re-entering runDual — at enqueue time we already stamped.
+      if (!alreadyStamped) {
+        await sdk.client.session
+          .prompt({
+            sessionID: parentSessionID,
+            agent: local.agent.current().name,
+            noReply: true,
+            parts: [{ type: "text", text }],
+          })
+          .catch(() => {})
+      }
 
       const res = await sdk.client.dual.start({
         dualStartRequest: {
