@@ -1,0 +1,121 @@
+name: publish-zwei
+
+# Build + publish the Zwei CLI to npm.
+#
+# Independent from the upstream opencode publish.yml pipeline — this only
+# produces:
+#   - zwei-{platform}-{arch}[-suffix]  per-platform native binary packages
+#   - zwei                             meta-package with optionalDependencies
+#
+# Trigger: manual workflow_dispatch. Supply `version` (e.g. "0.1.0") and
+# optional `channel` (default: "latest"). For dry runs set channel to
+# "dryrun-only-test" — publish uses --tag so the dryrun never occupies the
+# real latest pointer.
+#
+# Required secrets:
+#   NPM_TOKEN — npm token with publish access to the `zwei` name and all
+#               `zwei-*` platform-specific packages.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (semver, no "v" prefix), e.g. 0.1.0'
+        required: true
+        type: string
+      channel:
+        description: "npm dist-tag (default: latest)"
+        required: false
+        default: "latest"
+        type: string
+      dry_run:
+        description: "npm publish --dry-run (no actual publish)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency: ${{ github.workflow }}-${{ inputs.version }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Build native binaries across all supported platforms in parallel.
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each runner builds the binaries native to its own OS/arch.
+        # We do NOT cross-compile to avoid the baseline-binary flakiness
+        # opencode's own pipeline uses Bun-artifact downloads for.
+        include:
+          - host: ubuntu-latest
+            node_os: linux
+            node_arch: x64
+          - host: macos-14           # Apple Silicon
+            node_os: darwin
+            node_arch: arm64
+          - host: macos-13           # Intel
+            node_os: darwin
+            node_arch: x64
+          - host: windows-2022
+            node_os: win32
+            node_arch: x64
+    runs-on: ${{ matrix.host }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile
+      - name: Build zwei native binary for this platform
+        working-directory: packages/zwei
+        run: bun run script/build.ts --single --skip-embed-web-ui
+        env:
+          ZWEI_VERSION: ${{ inputs.version }}
+      - name: Post-process into zwei-* packages
+        working-directory: packages/zwei
+        run: bun run script/build-zwei.ts
+      - name: Upload zwei dist for this platform
+        uses: actions/upload-artifact@v4
+        with:
+          name: zwei-dist-${{ matrix.node_os }}-${{ matrix.node_arch }}
+          path: packages/zwei/dist/zwei-*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Install deps
+        run: bun install --frozen-lockfile
+      - name: Download all platform dists
+        uses: actions/download-artifact@v4
+        with:
+          pattern: zwei-dist-*
+          path: packages/zwei/dist
+          merge-multiple: true
+      - name: List dist layout (debug)
+        run: ls -R packages/zwei/dist
+      - name: Publish to npm
+        working-directory: packages/zwei
+        run: bun run script/publish-zwei.ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          ZWEI_VERSION: ${{ inputs.version }}
+          ZWEI_CHANNEL: ${{ inputs.channel }}
+          ZWEI_DRY_RUN: ${{ (inputs.dry_run == 'true') && '1' || '' }}
+          ZWEI_REPO: ${{ github.server_url }}/${{ github.repository }}
