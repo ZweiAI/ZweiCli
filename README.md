@@ -42,6 +42,16 @@ This is an **architectural bet**: _role isolation + information asymmetry > sing
 
 The combined effect: the writer can't Goodhart the grader, and neither context contaminates the other.
 
+## Actor-critic — a substrate for self-improvement
+
+Structurally, the PhD / Supervisor split is a classic **actor-critic** shape: the PhD acts, the Supervisor grades. That framing isn't cosmetic — it opens a loop a single-agent architecture can't close:
+
+- **The critic's verdict is a natural training signal.** The Supervisor already emits structured pass/fail judgements with reasoning. Persist them and you get a labelled dataset of "where the agent fails and why" — with no human annotation step.
+- **Information asymmetry keeps the signal honest.** Any reward a single agent produces by grading itself gets Goodharted. Zwei's isolation keeps the critic's judgement out of the actor's context, so the signal is cleaner and more suitable as a training target.
+- **The loop can close without a human in it.** PhD writes → Supervisor grades → verdict persisted → periodic fine-tune or prompt evolution → the next PhD is a little sharper. Actor → environment → critic → actor, machine-to-machine.
+
+None of this is wired up yet — pre-1.0, the focus is still inference. But the boundaries are already shaped for it: structured verdicts, persisted sessions, asymmetric memory. The long bet is a coding agent that **gets better with use**, not one frozen at whatever model version shipped.
+
 ## Install
 
 ### From source

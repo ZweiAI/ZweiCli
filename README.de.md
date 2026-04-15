@@ -42,6 +42,16 @@ Das ist eine **architektonische Wette**: _Rollenisolation + Informationsasymmetr
 
 Der kombinierte Effekt: Der Schreibende kann den Prüfenden nicht per Goodharting austricksen, und keiner der beiden Kontexte wird durch die Artefakte des anderen kontaminiert.
 
+## Actor-Critic — ein Substrat für Selbstverbesserung
+
+Strukturell ist die PhD / Supervisor-Aufteilung ein klassisches **Actor-Critic**-Schema: Der PhD ist der Actor, der Supervisor der Critic. Diese Zuordnung ist nicht kosmetisch — sie öffnet eine Schleife, die ein Single-Agent-Aufbau nicht schließen kann:
+
+- **Das Urteil des Critics ist ein natürliches Trainingssignal.** Der Supervisor gibt ohnehin strukturierte Pass/Fail-Urteile mit Begründung aus. Persistiert man sie, erhält man einen gelabelten Datensatz „wo und warum der Agent scheitert" — ohne einen Schritt menschlicher Annotation.
+- **Informationsasymmetrie hält das Signal ehrlich.** Jedes Belohnungssignal, das ein einzelner Agent durch Selbstbenotung erzeugt, wird Goodhart-verzerrt. Die Isolation bei Zwei sorgt dafür, dass das Urteil des Critics nicht im Kontext des Actors lebt — das Signal ist sauberer und als Trainingsziel besser geeignet.
+- **Die Schleife kann sich ohne Menschen schließen.** PhD schreibt → Supervisor benotet → Urteil gespeichert → periodisches Fine-Tuning / Prompt-Evolution → der nächste PhD ist einen Tick schärfer. Actor → Umgebung → Critic → Actor, Maschine zu Maschine.
+
+Nichts davon ist bisher verdrahtet — pre-1.0, der Fokus liegt weiterhin auf Inferenz. Aber die Grenzen sind bereits dafür geformt: strukturierte Urteile, persistierte Sessions, asymmetrisches Gedächtnis. Die langfristige Wette: ein Coding-Agent, der **mit der Nutzung besser wird**, statt auf dem Stand einer Modellversion einzufrieren.
+
 ## Installation
 
 ### Aus dem Quellcode

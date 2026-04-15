@@ -42,6 +42,16 @@ Zwei 的核心理念很简单：把一个编码 agent 拆成**两个隔离的角
 
 合起来的效果：写代码者没法通过揣摩 Supervisor 的措辞去 Goodhart 验证器，两边的上下文也不会被对方的产物污染。
 
+## Actor-Critic —— 面向自我进化的底座
+
+从结构上看，PhD / Supervisor 的拆分本质就是经典的 **actor-critic**：PhD 是 actor，Supervisor 是 critic。这个映射不是修辞 —— 它打开了一条单 agent 架构打不开的闭环：
+
+- **critic 的判决是天然的训练信号。** Supervisor 本来就会输出结构化的 pass/fail 判决和理由。把这些持久化下来，就得到了一份 "agent 在哪里翻车、为什么翻车" 的标注数据 —— 不需要人工标注这一步。
+- **信息不对称让信号保持诚实。** 单 agent 给自己打分产出的任何奖励信号，都会被 Goodhart。Zwei 的隔离让 critic 的判决不在 actor 的上下文里，所以这个信号更干净，更适合拿来做训练目标。
+- **闭环可以不带人。** PhD 写 → Supervisor 评 → 判决入库 → 周期性微调 / prompt 进化 → 下一版 PhD 更锐利一点。Actor → 环境 → critic → 回到 actor，全链路机器对机器。
+
+这些都还没接上 —— pre-1.0，重点还在 inference 侧。但边界已经摆好了：结构化判决、持久化会话、非对称记忆。长期的赌是：一个**会随使用而变强**的编码 agent，而不是冻结在某个模型版本上的快照。
+
 ## 安装
 
 ### 从源码装
