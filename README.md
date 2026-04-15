@@ -10,6 +10,8 @@
 >
 > _"Zwei" — German for "two"._
 
+<p align="center"><img src="./assets/welcome.png" alt="Zwei TUI welcome screen" width="720"></p>
+
 ---
 
 ## Why

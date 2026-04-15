@@ -10,6 +10,8 @@
 >
 > _"Zwei" — 德语的 "2"。_
 
+<p align="center"><img src="./assets/welcome.png" alt="Zwei TUI 欢迎界面" width="720"></p>
+
 ---
 
 ## 为什么
