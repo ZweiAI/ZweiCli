@@ -117,7 +117,9 @@
   ],
   "overrides": {
     "@types/bun": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@opencode-ai/plugin": "file:./packages/plugin",
+    "@opencode-ai/sdk": "file:./packages/sdk/js"
   },
   "patchedDependencies": {
     "@standard-community/standard-openapi@0.2.9": "patches/@standard-community%2Fstandard-openapi@0.2.9.patch",

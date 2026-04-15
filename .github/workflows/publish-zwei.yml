@@ -59,9 +59,9 @@ jobs:
           - host: macos-14           # Apple Silicon
             node_os: darwin
             node_arch: arm64
-          - host: macos-13           # Intel
-            node_os: darwin
-            node_arch: x64
+          # macos-13 (Intel) runner was deprecated by GitHub; Intel Macs are EOL.
+          # Users on Intel Mac should install from source until a replacement
+          # strategy is in place (cross-compile via Bun, or bring-your-own CI).
           - host: windows-2022
             node_os: win32
             node_arch: x64
