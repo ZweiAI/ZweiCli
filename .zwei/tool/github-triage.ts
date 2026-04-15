@@ -56,8 +56,8 @@ If unsure, choose the team/section with the most overlap with the issue and assi
   },
   async execute(args) {
     const issue = getIssueNumber()
-    const owner = "anomalyco"
-    const repo = "opencode"
+    const owner = "ZweiAI"
+    const repo = "ZweiCli"
 
     const results: string[] = []
     let labels = [...new Set(args.labels.map((x) => (x === "desktop" ? "web" : x)))]
