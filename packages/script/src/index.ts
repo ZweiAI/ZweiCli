@@ -47,15 +47,11 @@ const VERSION = await (async () => {
   return `${major}.${minor}.${patch + 1}`
 })()
 
-const bot = ["actions-user", "opencode", "opencode-agent[bot]"]
-const teamPath = path.resolve(import.meta.dir, "../../../.github/TEAM_MEMBERS")
-const team = [
-  ...(await Bun.file(teamPath)
-    .text()
-    .then((x) => x.split(/\r?\n/).map((x) => x.trim()))
-    .then((x) => x.filter((x) => x && !x.startsWith("#")))),
-  ...bot,
-]
+// Legacy upstream opencode concept: a curated team-members list loaded from
+// .github/TEAM_MEMBERS for changelog attribution. The fork deleted that file
+// in the Tier 1 cleanup and nothing reads Script.team, so this just surfaces
+// the bot list. Keep the getter so any future caller doesn't break.
+const team = ["actions-user", "opencode", "opencode-agent[bot]"]
 
 export const Script = {
   get channel() {
