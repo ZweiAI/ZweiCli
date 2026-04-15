@@ -8,6 +8,16 @@ export async function bootstrap<T>(directory: string, cb: () => Promise<T>) {
     directory,
     init: InstanceBootstrap,
     fn: async () => {
+      // Fire auto-update check in the background for every CLI subcommand
+      // (run/dual/stress/eval/...). TUI mode already calls upgrade() from
+      // worker.ts; this wires up the headless commands too. Non-blocking —
+      // the check runs in parallel with the user's actual work, and if it
+      // decides to auto-install, npm writes the new binary for the next
+      // launch; the current process is unaffected. Respects
+      // config.autoupdate and ZWEI_DISABLE_AUTOUPDATE.
+      import("./upgrade")
+        .then((m) => m.upgrade())
+        .catch(() => {})
       try {
         const result = await cb()
         return result
