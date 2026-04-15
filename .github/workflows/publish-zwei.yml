@@ -2,21 +2,29 @@ name: publish-zwei
 
 # Build + publish the Zwei CLI to npm.
 #
-# Independent from the upstream opencode publish.yml pipeline — this only
-# produces:
-#   - zwei-{platform}-{arch}[-suffix]  per-platform native binary packages
-#   - zwei                             meta-package with optionalDependencies
+# Two ways to trigger:
 #
-# Trigger: manual workflow_dispatch. Supply `version` (e.g. "0.1.0") and
-# optional `channel` (default: "latest"). For dry runs set channel to
-# "dryrun-only-test" — publish uses --tag so the dryrun never occupies the
-# real latest pointer.
+# 1. Push a tag   — e.g. `git tag v0.2.0 && git push --tags`
+#    - `v0.2.0`           → version=0.2.0,     channel=latest
+#    - `v0.2.0-beta.1`    → version=0.2.0-beta.1, channel=beta
+#    - `v0.2.0-rc.1`      → version=0.2.0-rc.1,  channel=rc
+#    (anything after the first hyphen is the prerelease id; that id becomes
+#    the npm dist-tag so you don't clobber `latest` with a prerelease.)
+#
+# 2. Manual (Actions → publish-zwei → Run workflow)
+#    - For one-off or experimental releases. Supply version + channel +
+#      dry_run explicitly. Useful when you want dry_run=true before a tag.
+#
+# Produces:
+#   - @zweicli/{platform}-{arch}   per-platform native binary packages
+#   - zweicli                      meta-package with optionalDependencies
 #
 # Required secrets:
-#   NPM_TOKEN — npm token with publish access to the `zwei` name and all
-#               `zwei-*` platform-specific packages.
+#   NPM_TOKEN — npm token with publish access to `zweicli` and `@zweicli` scope.
 
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
@@ -37,21 +45,55 @@ on:
           - "false"
           - "true"
 
-concurrency: ${{ github.workflow }}-${{ inputs.version }}
+concurrency: ${{ github.workflow }}-${{ inputs.version || github.ref }}
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
+  # Resolve version/channel/dry_run from either the pushed tag or the manual
+  # dispatch inputs. Downstream jobs read these outputs — that way the build
+  # and publish steps are identical for both triggers.
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      channel: ${{ steps.resolve.outputs.channel }}
+      dry_run: ${{ steps.resolve.outputs.dry_run }}
+    steps:
+      - name: Resolve release metadata
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Tag-driven. Strip leading "v".
+            tag="${GITHUB_REF#refs/tags/}"
+            version="${tag#v}"
+            # Prerelease id = substring after first hyphen in the version.
+            # e.g. 0.2.0-beta.1 -> "beta.1" -> dist-tag "beta"
+            if [[ "$version" == *-* ]]; then
+              pre="${version#*-}"
+              channel="${pre%%.*}"
+            else
+              channel="latest"
+            fi
+            dry_run=""
+          else
+            version="${{ inputs.version }}"
+            channel="${{ inputs.channel }}"
+            if [ "${{ inputs.dry_run }}" = "true" ]; then dry_run="1"; else dry_run=""; fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
+          echo "resolved: version=$version channel=$channel dry_run='$dry_run'"
+
   # Build native binaries across all supported platforms in parallel.
   build:
+    needs: meta
     strategy:
       fail-fast: false
       matrix:
-        # Each runner builds the binaries native to its own OS/arch.
-        # We do NOT cross-compile to avoid the baseline-binary flakiness
-        # opencode's own pipeline uses Bun-artifact downloads for.
         include:
           - host: ubuntu-latest
             node_os: linux
@@ -60,8 +102,6 @@ jobs:
             node_os: darwin
             node_arch: arm64
           # macos-13 (Intel) runner was deprecated by GitHub; Intel Macs are EOL.
-          # Users on Intel Mac should install from source until a replacement
-          # strategy is in place (cross-compile via Bun, or bring-your-own CI).
           - host: windows-2022
             node_os: win32
             node_arch: x64
@@ -77,7 +117,7 @@ jobs:
         working-directory: packages/zwei
         run: bun run script/build.ts --single --skip-embed-web-ui
         env:
-          ZWEI_VERSION: ${{ inputs.version }}
+          ZWEI_VERSION: ${{ needs.meta.outputs.version }}
       - name: Post-process into zwei-* packages
         working-directory: packages/zwei
         run: bun run script/build-zwei.ts
@@ -89,7 +129,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: build
+    needs: [meta, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,7 +155,7 @@ jobs:
         run: bun run script/publish-zwei.ts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          ZWEI_VERSION: ${{ inputs.version }}
-          ZWEI_CHANNEL: ${{ inputs.channel }}
-          ZWEI_DRY_RUN: ${{ (inputs.dry_run == 'true') && '1' || '' }}
+          ZWEI_VERSION: ${{ needs.meta.outputs.version }}
+          ZWEI_CHANNEL: ${{ needs.meta.outputs.channel }}
+          ZWEI_DRY_RUN: ${{ needs.meta.outputs.dry_run }}
           ZWEI_REPO: ${{ github.server_url }}/${{ github.repository }}
