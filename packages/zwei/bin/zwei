@@ -2,7 +2,7 @@
 
 // Zwei CLI launcher.
 //
-// Looks for a platform-specific package `zwei-{platform}-{arch}` in the
+// Looks for a platform-specific package `@zweicli/{platform}-{arch}` in the
 // surrounding node_modules tree and execs its native binary.
 //
 // Environment overrides:
@@ -92,7 +92,7 @@ function supportsAvx2() {
 }
 
 function candidateNames() {
-  const base = `zwei-${platform}-${arch}`
+  const base = `@zweicli/${platform}-${arch}`
   const avx2 = supportsAvx2()
   const baseline = arch === "x64" && !avx2
 
