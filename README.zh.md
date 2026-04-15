@@ -41,7 +41,7 @@ bun run --cwd packages/zwei dev --help
 ### 从 npm 装(待发布)
 
 ```bash
-npm install -g zweicli
+npm install -g @zweicli/cli
 zwei --help
 ```
 

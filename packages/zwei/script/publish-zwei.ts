@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 
-// Publishes the `zwei cli` meta-package + per-platform native packages to npm.
+// Publishes the `@zweicli/cli` meta-package + per-platform native packages
+// to npm.
 //
 // Prerequisites:
 //   1. `bun run script/build.ts`       (opencode native binaries)
 //   2. `bun run script/build-zwei.ts`  (per-platform sub-packages with renamed bin)
-//   3. NPM_TOKEN in env with publish access to the `zweicli` name and the
-//      `@zweicli` scope.
+//   3. NPM_TOKEN in env with publish access to the `@zweicli` scope.
 //
 // Version: derives from the first per-platform package's `version` field,
 // set by `build.ts` via ZWEI_VERSION. If the meta-package version is
@@ -47,7 +47,7 @@ const platformPkgs: Record<string, string> = Object.fromEntries(
 )
 
 const version = process.env.ZWEI_VERSION || platforms[0].version
-console.log(`publishing zweicli@${version} (tag: ${channel})`)
+console.log(`publishing @zweicli/cli@${version} (tag: ${channel})`)
 console.log("platform packages:", platformPkgs)
 
 // --- Assemble the main `zweicli` meta-package ---
@@ -76,7 +76,7 @@ if (fs.existsSync(readmePath)) {
 await Bun.file(path.join(metaDir, "package.json")).write(
   JSON.stringify(
     {
-      name: "zweicli",
+      name: "@zweicli/cli",
       version,
       description: "Dual-agent coding CLI. Student writes, Supervisor verifies. Fork of opencode.",
       bin: { zwei: "./bin/zwei" },
@@ -106,7 +106,7 @@ for (const p of platforms) {
   await $`npm publish --access public --tag ${channel} ${dryRun}`.cwd(cwd)
 }
 
-console.log(`publishing zweicli (meta)...`)
+console.log(`publishing @zweicli/cli (meta)...`)
 await $`npm publish --access public --tag ${channel} ${dryRun}`.cwd(metaDir)
 
 console.log("done.")

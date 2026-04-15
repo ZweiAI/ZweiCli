@@ -41,7 +41,7 @@ bun run --cwd packages/zwei dev --help
 ### From npm (once published)
 
 ```bash
-npm install -g zweicli
+npm install -g @zweicli/cli
 zwei --help
 ```
 
