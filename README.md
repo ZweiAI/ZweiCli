@@ -1,6 +1,6 @@
 # Zwei CLI
 
-<p align="right"><b>English</b> | <a href="./README.zh.md">简体中文</a></p>
+<p align="right"><b>English</b> | <a href="./README.zh.md">简体中文</a> | <a href="./README.ja.md">日本語</a> | <a href="./README.de.md">Deutsch</a></p>
 
 > **Experimental** dual-agent coding tool. **PhD writes, Supervisor verifies.**
 >
@@ -20,12 +20,25 @@ Most coding agents cram everything into a single context: read, write, run tests
 
 Zwei borrows a pattern from academia: **PhD writes, Supervisor grades.** Two isolated sessions, two independent skill sets, one-way information flow at the boundary. The writer never peeks at the grader's reasoning — so it can't optimise against it.
 
-## Core Ideas
+## The core bet
 
-- **Dual Attention** — two physically isolated sessions. The PhD focuses on writing; the Supervisor focuses on reviewing. Neither role burns attention on the other's job.
-- **Independent Skills** — each role loads its own skill set. Nothing is shared by default — the PhD isn't distracted by review tooling, the Supervisor isn't tempted to reach in and edit.
-- **Asymmetric Memory** — the PhD never sees the Supervisor's reasoning; only a structured verdict crosses the boundary. The Supervisor sees the PhD's code and test output. Memory flows one way, by design.
-- **Write / Test Separation** — the PhD has no `bash` and no read access to tests. Self-verification is physically impossible, and the writer's context stays clean — no tool traces, no test output, no file dumps polluting it.
+Zwei's premise is simple: split one coding agent into **two isolated roles** — the PhD writes, the Supervisor reviews — with information flowing **one way**. The writer never sees the grader's reasoning.
+
+It targets a real failure mode: **a single agent's self-evaluation degrades over long conversations** (sometimes called "Goodharting" — grading your own homework and always getting an A).
+
+A concrete example. Ask an agent to write a sort function and self-test it:
+
+- **Single-agent mode:** it writes a buggy test, "passes" its own buggy test, declares victory.
+- **Zwei's dual-agent mode:** the PhD writes the function but **cannot see the tests and has no `bash`**. The Supervisor independently reviews the code and runs the tests. Neither context contaminates the other.
+
+This is an **architectural bet**: _role isolation + information asymmetry > single context doing everything_. The hypothesis is worth exploring — especially for complex, multi-step coding work. But today Zwei is best understood as **a promising experiment, not a validated tool**. If you care about agent architecture, it's worth a look. If you just want a daily-driver coding assistant, come back later.
+
+## Core ideas
+
+- **Dual attention** — two physically isolated sessions. The PhD focuses on writing; the Supervisor focuses on reviewing. Neither role burns attention on the other's job.
+- **Independent skills** — each role loads its own skill set. Nothing is shared by default — the PhD isn't distracted by review tooling, the Supervisor isn't tempted to reach in and edit.
+- **Asymmetric memory** — the PhD never sees the Supervisor's reasoning; only a structured verdict crosses the boundary. The Supervisor sees the PhD's code and test output. Memory flows one way, by design.
+- **Write / test separation** — the PhD has no `bash` and no read access to tests. Self-verification is physically impossible, and the writer's context stays clean — no tool traces, no test output, no file dumps polluting it.
 
 The combined effect: the writer can't Goodhart the grader, and neither context contaminates the other.
 
