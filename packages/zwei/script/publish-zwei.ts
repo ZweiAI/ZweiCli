@@ -25,20 +25,28 @@ process.chdir(dir)
 
 const channel = process.env.ZWEI_CHANNEL || "latest"
 
-const platformPkgs: Record<string, string> = {}
+// Each entry tracks both the npm name (e.g. "@zweicli/windows-x64") and the
+// on-disk directory it lives in (e.g. "zwei-windows-x64"). The two differ
+// because build-zwei.ts rewrites the package.json name without renaming
+// the directory.
+const platforms: Array<{ name: string; version: string; dir: string }> = []
 for (const filepath of new Bun.Glob("zwei-*/package.json").scanSync({ cwd: "./dist" })) {
   const entry = await Bun.file(`./dist/${filepath}`).json()
-  platformPkgs[entry.name] = entry.version
+  platforms.push({ name: entry.name, version: entry.version, dir: path.dirname(filepath) })
 }
 
-if (Object.keys(platformPkgs).length === 0) {
+if (platforms.length === 0) {
   console.error(
     "publish-zwei: no dist/zwei-*/package.json found. Run build.ts + build-zwei.ts first.",
   )
   process.exit(1)
 }
 
-const version = process.env.ZWEI_VERSION || Object.values(platformPkgs)[0]
+const platformPkgs: Record<string, string> = Object.fromEntries(
+  platforms.map((p) => [p.name, p.version]),
+)
+
+const version = process.env.ZWEI_VERSION || platforms[0].version
 console.log(`publishing zweicli@${version} (tag: ${channel})`)
 console.log("platform packages:", platformPkgs)
 
@@ -89,12 +97,12 @@ await Bun.file(path.join(metaDir, "package.json")).write(
 // resolve when users install.
 const dryRun = process.env.ZWEI_DRY_RUN === "1" ? ["--dry-run"] : []
 
-for (const name of Object.keys(platformPkgs)) {
-  const cwd = path.join("dist", name)
+for (const p of platforms) {
+  const cwd = path.join("dist", p.dir)
   if (process.platform !== "win32") {
     await $`chmod -R 755 .`.cwd(cwd).nothrow()
   }
-  console.log(`publishing ${name}...`)
+  console.log(`publishing ${p.name} (from dist/${p.dir})...`)
   await $`npm publish --access public --tag ${channel} ${dryRun}`.cwd(cwd)
 }
 
