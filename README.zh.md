@@ -38,11 +38,17 @@ bun install
 bun run --cwd packages/zwei dev --help
 ```
 
-### 从 npm 装(待发布)
+### 从 npm 装
 
 ```bash
 npm install -g @zweicli/cli
 zwei --help
+```
+
+Zwei 独立版本管理,所以自动升级被关掉了 —— 上游 opencode 的 release 通道装过来是错的包。要升级:
+
+```bash
+npm install -g @zweicli/cli@latest
 ```
 
 dual 循环之外的所有内容(鉴权、模型、provider、会话、web UI 等)仍沿用上游 opencode 的约定。参见 [opencode.ai](https://opencode.ai)。

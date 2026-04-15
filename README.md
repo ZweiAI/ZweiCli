@@ -38,11 +38,17 @@ bun install
 bun run --cwd packages/zwei dev --help
 ```
 
-### From npm (once published)
+### From npm
 
 ```bash
 npm install -g @zweicli/cli
 zwei --help
+```
+
+Zwei is versioned independently from opencode, so auto-upgrade is disabled — upstream release channels would pull the wrong package. To bump:
+
+```bash
+npm install -g @zweicli/cli@latest
 ```
 
 For everything outside the dual loop (auth, models, providers, sessions, web UI), upstream opencode conventions still apply. See [opencode.ai](https://opencode.ai).
