@@ -112,7 +112,11 @@ jobs:
         with:
           bun-version: latest
       - name: Install deps
-        run: bun install --frozen-lockfile
+        # --ignore-scripts skips electron's ~200 MB Chromium download and any
+        # other postinstall hooks we don't need for the AOT-compiled zwei
+        # binary. Electron was hanging the Windows runner for 10+ min.
+        run: bun install --frozen-lockfile --ignore-scripts
+        timeout-minutes: 10
       - name: Build zwei native binary for this platform
         working-directory: packages/zwei
         run: bun run script/build.ts --single --skip-embed-web-ui
@@ -141,7 +145,11 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
       - name: Install deps
-        run: bun install --frozen-lockfile
+        # --ignore-scripts skips electron's ~200 MB Chromium download and any
+        # other postinstall hooks we don't need for the AOT-compiled zwei
+        # binary. Electron was hanging the Windows runner for 10+ min.
+        run: bun install --frozen-lockfile --ignore-scripts
+        timeout-minutes: 10
       - name: Download all platform dists
         uses: actions/download-artifact@v4
         with:
