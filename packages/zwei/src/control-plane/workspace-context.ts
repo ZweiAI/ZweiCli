@@ -12,6 +12,12 @@ export const WorkspaceContext = {
     return context.provide({ workspaceID: input.workspaceID as string }, () => input.fn())
   },
 
+  // Synchronous variant of provide — EffectBridge uses this to restore the
+  // workspace id on cross-fiber boundaries without going through an await.
+  restore<R>(workspaceID: string, fn: () => R): R {
+    return context.provide({ workspaceID }, fn)
+  },
+
   get workspaceID() {
     try {
       return context.use().workspaceID
