@@ -1,0 +1,57 @@
+{
+  "repo_notes": [
+    {
+      "content": "Zwei is an agent runtime that escalates to a second agent (supervisor) only when needed. It focuses on long-horizon tasks, reducing regression, and maintaining intent over multiple steps."
+    }
+  ],
+  "pages": [
+    {
+      "title": "Zwei Overview",
+      "purpose": "High-level introduction to Zwei: what it is, why it exists, and how it differs from single-agent systems. Explains auto/single/dual modes and the idea of conditional escalation."
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Install Zwei CLI, run your first command, and understand basic usage. Covers npm install, running zwei, and first interaction patterns."
+    },
+    {
+      "title": "Core Concept: Auto / Single / Dual",
+      "purpose": "Explains the three execution modes: single (one agent), dual (student + supervisor), and auto (adaptive escalation). Describes when each mode is used and trade-offs."
+    },
+    {
+      "title": "Execution Flow",
+      "purpose": "Describes how a task flows through Zwei: user input → student attempt → optional supervisor review → next round or finish. Covers round lifecycle and termination conditions."
+    },
+    {
+      "title": "Student & Supervisor Roles",
+      "purpose": "Defines the responsibilities of the student (execution) and supervisor (verification, compression, intent tracking). Explains how they interact and why this separation exists."
+    },
+    {
+      "title": "Long-Range Attention & Memory",
+      "purpose": "Explains how Zwei maintains intent across multiple steps using supervisor summaries, ledger, and snapshots instead of relying on raw context."
+    },
+    {
+      "title": "Prompting & Renderer",
+      "purpose": "Describes how structured data (task, history, constraints) is rendered into prompts for student and supervisor. Explains why prompt rendering is separated."
+    },
+    {
+      "title": "Tools & Capabilities",
+      "purpose": "Lists built-in tools (bash, read, write, websearch, etc.) and how agents use them. Covers permission model and execution boundaries."
+    },
+    {
+      "title": "Plan Mode",
+      "purpose": "Explains the planning workflow: plan → review → checkpoints → execution. Covers how planning differs from direct execution."
+    },
+    {
+      "title": "CLI & Interaction",
+      "purpose": "Documents CLI usage: /agent, /model, switching modes, running tasks, and interactive behavior."
+    },
+    {
+      "title": "Configuration",
+      "purpose": "Covers configuration options such as model selection, default mode, and runtime behavior."
+    },
+    {
+      "title": "Architecture",
+      "purpose": "Overview of the internal structure: session system, dual-agent loop, prompt renderer, and orchestration logic."
+    }
+  ]
+}
